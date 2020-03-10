@@ -10,18 +10,19 @@ import java.util.*;
 @Slf4j
 public class AnalyzeMidi {
     private MidiFile file;
+    List<Note> notes;
 
     public AnalyzeMidi(MidiFile file) {
         this.file = file;
+        notes = SongUtils.getNoteFromTrack(file);
     }
 
     public void analyzisDiapozon() {
         log.trace("Анализ диапозона трека");
         Map<Integer, String> analyzis = new LinkedHashMap<>();
-        List<Note> list = SongUtils.getNoteFromTrack(file);
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
-        for (Note s : list) {
+        for (Note s : notes) {
             if (s.sign().getMidi() > max) {
                 max = s.sign().getMidi();
                 analyzis.put(0, s.sign().fullName());
@@ -41,15 +42,37 @@ public class AnalyzeMidi {
     public void analyzisDuration() {
         log.trace("Анализ нот трека по длительности.");
         Map<Integer, Integer> analysis = new HashMap<>();
-        List<Note> notes = SongUtils.getNoteFromTrack(file);
         Tempo tempo = SongUtils.getTempo(file);
         for (Note note : notes) {
-            int noteMs = SongUtils.tickToMs(tempo.getBpm(),file.getResolution(),note.durationTicks());
+            int noteMs = SongUtils.tickToMs(tempo.getBpm(), file.getResolution(), note.durationTicks());
             analysis.put(noteMs, analysis.getOrDefault(noteMs, 1));
         }
         log.info("Количество нот по длительностям");
         for (Map.Entry<Integer, Integer> durations : analysis.entrySet()) {
             log.info(durations.getKey() + ": " + durations.getValue());
         }
+    }
+
+    public void analyzisHeigh() {
+        log.trace("Анализ нот по числу вхождений.");
+        Map<String, Long> analysis = new HashMap<>();
+        for (Note s : notes) {
+            if (analysis.containsKey(s.sign().fullName())) {
+                Long buf = analysis.get(s.sign().fullName());
+                analysis.put(s.sign().fullName(), buf + 1);
+            } else {
+                analysis.put(s.sign().fullName(), 1L);
+            }
+        }
+        log.info("Список нот по кол-ву вхождений");
+        for (Map.Entry<String,Long> heigh : analysis.entrySet()) {
+            log.info(heigh.getKey() + ": " + heigh.getValue());
+        }
+    }
+
+    public void fullAnalize() {
+        analyzisDiapozon();
+        analyzisDuration();
+        analyzisHeigh();
     }
 }

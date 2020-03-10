@@ -9,41 +9,82 @@ import com.leff.midi.event.meta.Tempo;
 import lombok.extern.slf4j.Slf4j;
 import ru.liga.songtask.domain.Note;
 import ru.liga.songtask.domain.NoteSign;
+import ru.liga.songtask.util.AnalyzeMidi;
+import ru.liga.songtask.util.ChangeMidi;
 import ru.liga.songtask.util.SongUtils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static ru.liga.songtask.util.SongUtils.eventsToNotes;
+
 @Slf4j
 public class App {
 
-    /**
-     * Это пример работы, можете всё стирать и переделывать
-     * Пример, чтобы убрать у вас начальный паралич разработки
-     * Также посмотрите класс SongUtils, он переводит тики в миллисекунды
-     * Tempo может быть только один
-     */
     public static void main(String[] args) throws IOException {
-        MidiFile midiFile = new MidiFile(new FileInputStream("C:\\Users\\Xiaomi\\IdeaProjects\\liga-internship\\javacore-song-task\\src\\main\\resources\\Wrecking Ball.mid"));
-        List<Note> notes = eventsToNotes(midiFile.getTracks().get(3).getEvents());
-        Tempo last = (Tempo) midiFile.getTracks().get(0).getEvents().last();
-        Note ninthNote = notes.get(8);
-        System.out.println("Длительность девятой ноты (" + ninthNote.sign().fullName() + "): " + SongUtils.tickToMs(last.getBpm(), midiFile.getResolution(), ninthNote.durationTicks()) + "мс");
-        System.out.println("Все ноты:");
-        System.out.println(notes);
+        if (args.length > 1) {
+            getArgs(args);
+        } else {
+            log.trace("Нет аргументов");
+        }
     }
 
-    /**
-     * Этот метод, чтобы вы не афигели переводить эвенты в ноты
-     *
-     * @param events эвенты одного трека
-     * @return список нот
-     */
+    public static void analyze(String path) throws IOException {
+        log.debug("Анализ midi файла");
+        MidiFile midiFile = new MidiFile(new File(path));
+        AnalyzeMidi analyze = new AnalyzeMidi(midiFile);
+        analyze.fullAnalize();
+    }
 
+    public static void getArgs(String[] args) throws IOException {
+        String params = args[1].trim();
+        if (params.equals("analyze")) {
+            analyze(args[0]);
+        } else {
+            Integer trans = null;
+            Float tempo = null;
+            if (params.equals("change")) {
+                if (args[2].equals("-trans")) {
+                    try {
+                        trans = Integer.parseInt(args[3]);
+                    } catch (Exception e) {
+                        log.debug("Неправильный агрумент: {}", e.getMessage());
+                    }
+                }
+                if (args[4].equals("-tempo")) {
+                    try {
+                        tempo = Float.parseFloat(args[5]);
+                    } catch (Exception e) {
+                        log.debug("Неправильный агрумент: {}", e.getMessage());
+                    }
+                }
+            }
+            change(args[0], trans, tempo);
+        }
+    }
+
+    private static void change(String arg, Integer trans, Float tempo) {
+        log.info("Изменяем файл {}, с транспонированием на {} полутонов и изменением темпа на {}%", new Object[]{arg, trans, tempo});
+        File file = new File(arg);
+        try {
+            MidiFile midiFile = new MidiFile(file);
+            MidiFile newMidi = ChangeMidi.changeMidi(midiFile, trans, tempo);
+            String newPath = getPath(trans, tempo, file);
+            newMidi.writeToFile(new File(newPath));
+            log.info("Изменённый файл: {}", newPath);
+        } catch (IOException e) {
+            log.trace("Ошибка Midi файла");
+        }
+    }
+
+    private static String getPath(int trans, float tempo, File file) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(file.getName().replace(".mid","")).
+                append("-trans").append(trans).append("-tempo").append(tempo).append(".mid");
+        log.info("Файл изменён.");
+        return file.getParentFile().getAbsolutePath() + File.separator + builder.toString();
+    }
 }

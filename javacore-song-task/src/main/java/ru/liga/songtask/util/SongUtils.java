@@ -114,4 +114,19 @@ public class SongUtils {
         log.info("Получение списка нот из дорожки");
         return SongUtils.eventsToNotes(SongUtils.getVoiceTrack(track).getEvents());
     }
+
+    public static List<List<Note>> getAllTracksAsNoteLists(MidiFile midiFile) {
+        log.trace("Процедура извлечерия треков из файла в виде List<Notes>");
+        List<List<Note>> allTracks = new ArrayList();
+
+        for(int i = 0; i < midiFile.getTracks().size(); ++i) {
+            List<Note> tmp = eventsToNotes(midiFile.getTracks().get(i)).getEvents());
+            if (tmp.size() > 0) {
+                allTracks.add(tmp);
+            }
+        }
+
+        log.trace("Извлечены все треки {} из файла.", allTracks.size());
+        return allTracks;
+    }
 }
