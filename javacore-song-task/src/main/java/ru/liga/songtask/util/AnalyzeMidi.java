@@ -45,11 +45,15 @@ public class AnalyzeMidi {
         Tempo tempo = SongUtils.getTempo(file);
         for (Note note : notes) {
             int noteMs = SongUtils.tickToMs(tempo.getBpm(), file.getResolution(), note.durationTicks());
-            analysis.put(noteMs, analysis.getOrDefault(noteMs, 1));
+            if (analysis.containsKey(noteMs)) {
+                analysis.put(noteMs,analysis.get(noteMs)+1);
+            }else {
+                analysis.put(noteMs,1);
+            }
         }
         log.info("Количество нот по длительностям");
         for (Map.Entry<Integer, Integer> durations : analysis.entrySet()) {
-            log.info(durations.getKey() + ": " + durations.getValue());
+            log.info(durations.getKey() + "мс: " + durations.getValue());
         }
     }
 

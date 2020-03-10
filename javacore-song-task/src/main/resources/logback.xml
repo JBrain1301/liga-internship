@@ -8,7 +8,6 @@
             <pattern>%d{HH:mm:ss.SSS} [%-5level] - %msg%n</pattern>
         </encoder>
     </appender>
-
     <appender name="midi-analysis"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>midi-analysis.log</file>

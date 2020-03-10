@@ -28,7 +28,7 @@ public class App {
         if (args.length > 1) {
             getArgs(args);
         } else {
-            log.trace("Нет аргументов");
+            log.info("Нет аргументов");
         }
     }
 
@@ -67,7 +67,7 @@ public class App {
     }
 
     private static void change(String arg, Integer trans, Float tempo) {
-        log.info("Изменяем файл {}, с транспонированием на {} полутонов и изменением темпа на {}%", new Object[]{arg, trans, tempo});
+        log.info("Изменение файла {}, с транспонированием на {} полутонов и изменением темпа на {}%", arg, trans, tempo);
         File file = new File(arg);
         try {
             MidiFile midiFile = new MidiFile(file);
