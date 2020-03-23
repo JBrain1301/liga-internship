@@ -9,6 +9,7 @@ import com.leff.midi.event.meta.Tempo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+
 @Slf4j
 public class ChangeMidi {
 
@@ -18,23 +19,18 @@ public class ChangeMidi {
 
     public static MidiFile changeMidi(MidiFile midiFile, int trans, float tempo) {
         float percentTempo = 1.0F + tempo / 100.0F;
-        log.trace("множитель темпа = {}", percentTempo);
+        log.trace("Pace multiplier = {}", percentTempo);
         MidiFile newMidi = changeTempo(midiFile, percentTempo);
         newMidi = transposeMidi(newMidi, trans);
-        log.trace("Изменение завершено");
+        log.trace("Change completed");
         return newMidi;
     }
 
     public static MidiFile changeTempo(MidiFile midiFile, float percentTempo) {
         MidiFile midiFile1 = new MidiFile();
-        log.debug("Старый Bpm = {}", SongUtils.getTempo(midiFile).getBpm());
-
-        for (MidiTrack midiTrack : midiFile.getTracks()) {
-            MidiTrack midiTrack1 = changeTempMidi(percentTempo, midiTrack);
-            midiFile1.addTrack(midiTrack1);
-        }
-
-        log.debug("Новай Bpm = {}", SongUtils.getTempo(midiFile1).getBpm());
+        log.debug("Old Bpm = {}", SongUtils.getTempo(midiFile).getBpm());
+        midiFile.getTracks().forEach(x -> midiFile1.addTrack(changeTempMidi(percentTempo, x)));
+        log.debug("New Bpm = {}", SongUtils.getTempo(midiFile1).getBpm());
         return midiFile1;
     }
 
@@ -61,20 +57,15 @@ public class ChangeMidi {
 
     public static MidiFile transposeMidi(MidiFile midiFile, int trans) {
         MidiFile midiFile1 = new MidiFile();
-
-        for (MidiTrack midiTrack : midiFile.getTracks()) {
-            MidiTrack midiTrack1 = transposeMidiTrack(trans, midiTrack);
-            midiFile1.addTrack(midiTrack1);
-        }
-
-        log.debug("Транспонирование на {} полутонов. Первая нота старого трека:{} -> Первая нота нового трека {}", new Object[]{trans, ((List)SongUtils.getAllTracksAsNoteLists(midiFile).get(0)).get(0), ((List)SongUtils.getAllTracksAsNoteLists(midiFile1).get(0)).get(0)});
+        midiFile.getTracks().forEach(miditrack -> midiFile1.addTrack(transposeMidiTrack(trans, miditrack)));
+        log.debug("Transpose into {} halftones. The first note of the old track: {} -> The first note of the new track {}", trans, ((List) SongUtils.getAllTracksAsNoteLists(midiFile).get(0)).get(0), ((List) SongUtils.getAllTracksAsNoteLists(midiFile1).get(0)).get(0));
         return midiFile1;
     }
 
     private static MidiTrack transposeMidiTrack(int trans, MidiTrack midiTrack) {
         MidiTrack midiTrack1 = new MidiTrack();
 
-        for (MidiEvent midiEvent : midiTrack.getEvents()) {
+        midiTrack.getEvents().forEach(midiEvent -> {
             if (midiEvent.getClass().equals(NoteOn.class)) {
                 NoteOn on = getChangedNoteOn(trans, (NoteOn) midiEvent);
                 midiTrack1.getEvents().add(on);
@@ -84,7 +75,7 @@ public class ChangeMidi {
             } else {
                 midiTrack1.getEvents().add(midiEvent);
             }
-        }
+        });
 
         return midiTrack1;
     }

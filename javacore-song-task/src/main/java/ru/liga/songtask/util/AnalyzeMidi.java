@@ -2,81 +2,94 @@ package ru.liga.songtask.util;
 
 import com.leff.midi.MidiFile;
 import com.leff.midi.event.meta.Tempo;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.liga.App;
 import ru.liga.songtask.domain.Note;
 
 import java.util.*;
 
-@Slf4j
+
 public class AnalyzeMidi {
+    private static Logger logger = LoggerFactory.getLogger(App.class);
     private MidiFile file;
     List<Note> notes;
 
     public AnalyzeMidi(MidiFile file) {
         this.file = file;
-        notes = SongUtils.getNoteFromTrack(file);
+        notes = SongUtils.getVoiceTrack(file);
     }
 
-    public void analyzisDiapozon() {
-        log.trace("Анализ диапозона трека");
+    public Map<Integer,String> analyzisDiapozon() {
+        logger.trace("Track Range Analysis");
         Map<Integer, String> analyzis = new LinkedHashMap<>();
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        for (Note s : notes) {
-            if (s.sign().getMidi() > max) {
-                max = s.sign().getMidi();
-                analyzis.put(0, s.sign().fullName());
+        final int[] min = {Integer.MAX_VALUE};
+        final int[] max = {Integer.MIN_VALUE};
+        notes.forEach(note -> {
+            if (note.sign().getMidi() > max[0]) {
+                max[0] = note.sign().getMidi();
+                analyzis.put(0, note.sign().fullName());
             }
-            if (s.sign().getMidi() < min) {
-                min = s.sign().getMidi();
-                analyzis.put(1, s.sign().fullName());
+            if (note.sign().getMidi() < min[0]) {
+                min[0] = note.sign().getMidi();
+                analyzis.put(1, note.sign().fullName());
             }
-        }
-        analyzis.put(2, String.valueOf(max - min));
-        log.info("Диапозон :");
-        log.info(" Верхняя: {}", analyzis.get(0));
-        log.info(" Нижняя: {}", analyzis.get(1));
-        log.info(" Диапозон: {}", analyzis.get(2));
-    }
+        });
 
-    public void analyzisDuration() {
-        log.trace("Анализ нот трека по длительности.");
+        analyzis.put(2,String.valueOf(max[0] - min[0]));
+        logger.info("Range :");
+        logger.info(" Upper: {}",analyzis.get(0));
+        logger.info(" Lower: {}",analyzis.get(1));
+        logger.info(" Range: {}",analyzis.get(2));
+        return analyzis;
+}
+
+    public Map<Integer,Integer> analyzisDuration() {
+        logger.trace("Analysis of track notes by duration.");
         Map<Integer, Integer> analysis = new HashMap<>();
         Tempo tempo = SongUtils.getTempo(file);
-        for (Note note : notes) {
+        notes.forEach(note -> {
             int noteMs = SongUtils.tickToMs(tempo.getBpm(), file.getResolution(), note.durationTicks());
             if (analysis.containsKey(noteMs)) {
-                analysis.put(noteMs,analysis.get(noteMs)+1);
-            }else {
-                analysis.put(noteMs,1);
+                analysis.put(noteMs, analysis.get(noteMs) + 1);
+            } else {
+                analysis.put(noteMs, 1);
             }
-        }
-        log.info("Количество нот по длительностям");
+        });
+        logger.info("The number of notes by duration");
         for (Map.Entry<Integer, Integer> durations : analysis.entrySet()) {
-            log.info(durations.getKey() + "мс: " + durations.getValue());
+            logger.info(durations.getKey() + "ms: " + durations.getValue());
         }
+        return analysis;
     }
 
-    public void analyzisHeigh() {
-        log.trace("Анализ нот по числу вхождений.");
+    public Map<String,Long> analyzisHeigh() {
+        logger.trace("Analysis of notes by the number of occurrences.");
         Map<String, Long> analysis = new HashMap<>();
-        for (Note s : notes) {
-            if (analysis.containsKey(s.sign().fullName())) {
-                Long buf = analysis.get(s.sign().fullName());
-                analysis.put(s.sign().fullName(), buf + 1);
+        notes.forEach(note -> {
+            if (analysis.containsKey(note.sign().fullName())) {
+                Long buf = analysis.get(note.sign().fullName());
+                analysis.put(note.sign().fullName(), buf + 1);
             } else {
-                analysis.put(s.sign().fullName(), 1L);
+                analysis.put(note.sign().fullName(), 1L);
             }
+        });
+        logger.info("List of notes by number of occurrences");
+        for (Map.Entry<String, Long> heigh : analysis.entrySet()) {
+            logger.info(heigh.getKey() + ": " + heigh.getValue());
         }
-        log.info("Список нот по кол-ву вхождений");
-        for (Map.Entry<String,Long> heigh : analysis.entrySet()) {
-            log.info(heigh.getKey() + ": " + heigh.getValue());
-        }
+        return analysis;
     }
 
     public void fullAnalize() {
-        analyzisDiapozon();
-        analyzisDuration();
-        analyzisHeigh();
+        if (notes != null) {
+            logger.info("Start analyze track");
+            analyzisDiapozon();
+            analyzisDuration();
+            analyzisHeigh();
+        } else {
+            logger.info("No voice track");
+        }
+
     }
 }

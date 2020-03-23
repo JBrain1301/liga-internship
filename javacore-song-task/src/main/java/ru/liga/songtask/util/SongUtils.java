@@ -5,22 +5,22 @@ import com.leff.midi.MidiTrack;
 import com.leff.midi.event.MidiEvent;
 import com.leff.midi.event.NoteOff;
 import com.leff.midi.event.NoteOn;
-import com.leff.midi.event.meta.Lyrics;
 import com.leff.midi.event.meta.Tempo;
 import com.leff.midi.event.meta.Text;
-import lombok.extern.slf4j.Slf4j;
+import com.leff.midi.event.meta.TrackName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.liga.App;
 import ru.liga.songtask.domain.Note;
 import ru.liga.songtask.domain.NoteSign;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
-@Slf4j
+
 public class SongUtils {
-
+    private static Logger logger = LoggerFactory.getLogger(App.class);
 
     public static int tickToMs(float bpm, int resolution, long amountOfTick) {
         return (int) (((60 * 1000) / (bpm * resolution)) * amountOfTick);
@@ -72,41 +72,67 @@ public class SongUtils {
 
     }
 
-    public static MidiTrack getVoiceTrack(MidiFile midiFile) {
-        log.trace("Попытка получить пригодный трек");
-        for (MidiTrack ew : midiFile.getTracks()) {
-            boolean isText = false;
-            List<MidiEvent> events = new ArrayList<>(ew.getEvents());
-            for (int h = 1; h < events.size(); h++) {
-                if (events.get(h).getClass().getSimpleName().equals(Lyrics.class.getSimpleName())) {
-                    isText = true;
-                }
-            }
-            if (isText) {
-                log.trace("Трек найден");
-                return ew;
-            }
-
-        }
-        log.trace("Трек не найден");
-        return null;
+    public static List<List<Note>> getVoiceTracks(MidiFile midiFile) {
+        logger.trace("Getting fit tracks");
+        List<List<Note>> allTracks = SongUtils.getAllTracksAsNoteLists(midiFile);
+        return voiceTrackFinder(allTracks);
     }
 
+    private static List<List<Note>> voiceTrackFinder(List<List<Note>> allTracks) {
+        logger.trace("Track with voice");
+        List<List<Note>> voices = allTracks.stream().filter((notes) -> {
+            return isVoice(notes) && !notes.isEmpty();
+        }).collect(Collectors.toList());
+        logger.trace("Found {} tracks suitable for performance by voice.", voices.size());
+        return voices;
+    }
+
+    public static List<Note> getVoiceTrack(MidiFile midiFile) {
+        logger.debug("Try to find track");
+        List<List<Note>> maybe = getVoiceTracks(midiFile);
+        long countOfTextEvents = getCountOfTextEvents(midiFile);
+        logger.debug("All TextEvent in file {}", countOfTextEvents);
+        List<Long> difference = maybe.stream().map((notes) -> {
+            return Math.abs((long)notes.size() - countOfTextEvents);
+        }).collect(Collectors.toList());
+        long minDifference = Collections.min(difference);
+        return maybe.get(difference.indexOf(minDifference));
+    }
+
+    private static long getCountOfTextEvents(MidiFile midiFile) {
+        return midiFile.getTracks().stream().flatMap((midiTrack) -> {
+            return midiTrack.getEvents().stream();
+        }).filter((midiEvent) -> {
+            return midiEvent.getClass().equals(Text.class);
+        }).count();
+    }
+
+    private static boolean isVoice(List<Note> track) {
+        logger.trace("Checking the track for voice performance.");
+        long exNoteEndTick = 0L;
+
+        Note n;
+        for(Iterator var3 = track.iterator(); var3.hasNext(); exNoteEndTick = n.startTick() + n.durationTicks()) {
+            n = (Note)var3.next();
+            if (exNoteEndTick > n.startTick()) {
+                logger.trace("Not good track");
+                return false;
+            }
+        }
+
+        logger.trace("Good track");
+        return true;
+    }
     public static Tempo getTempo(MidiFile midiFile) {
-        Tempo tempo = (Tempo)((MidiTrack)midiFile.getTracks().get(0)).getEvents().stream()
+        Tempo tempo = (Tempo) ((MidiTrack) midiFile.getTracks().get(0)).getEvents().stream()
                 .filter((value) -> value instanceof Tempo).findFirst().get();
-        log.trace("Извлечён event Tempo={}", tempo);
+        logger.trace("Retrieved event Tempo = {}", tempo);
         return tempo;
     }
 
-    public static List<Note> getNoteFromTrack(MidiFile midifile) {
-        log.info("Получение списка нот из дорожки");
-        System.out.println(SongUtils.eventsToNotes(SongUtils.getVoiceTrack(midifile).getEvents()).size());
-        return SongUtils.eventsToNotes(SongUtils.getVoiceTrack(midifile).getEvents());
-    }
 
     public static List<List<Note>> getAllTracksAsNoteLists(MidiFile midiFile) {
-        log.trace("Извлечение треков");
+        logger.trace("Extract tracks");
         List<List<Note>> allTracks = new ArrayList();
         for (int i = 0; i < midiFile.getTracks().size(); ++i) {
             List<Note> tmp = eventsToNotes(midiFile.getTracks().get(i).getEvents());
@@ -114,7 +140,7 @@ public class SongUtils {
                 allTracks.add(tmp);
             }
         }
-        log.trace("Извлечены треки {} из файла.", allTracks.size());
+        logger.trace("Tracks Extracted {} from file.", allTracks.size());
         return allTracks;
     }
 }

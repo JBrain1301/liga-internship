@@ -8,6 +8,7 @@
             <pattern>%d{HH:mm:ss.SSS} [%-5level] - %msg%n</pattern>
         </encoder>
     </appender>
+
     <appender name="midi-analysis"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>midi-analysis.log</file>
@@ -60,4 +61,8 @@
         <appender-ref ref="all-log"/>
     </root>
 
+
+    <!--    <logger name="ru.liga.all" level="all" additivity="false">-->
+    <!--        <appender-ref ref="all-log"/>-->
+    <!--    </logger>-->
 </configuration>

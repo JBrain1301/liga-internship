@@ -2,38 +2,27 @@ package ru.liga;
 
 
 import com.leff.midi.MidiFile;
-import com.leff.midi.event.MidiEvent;
-import com.leff.midi.event.NoteOff;
-import com.leff.midi.event.NoteOn;
-import com.leff.midi.event.meta.Tempo;
-import lombok.extern.slf4j.Slf4j;
-import ru.liga.songtask.domain.Note;
-import ru.liga.songtask.domain.NoteSign;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.liga.songtask.util.AnalyzeMidi;
 import ru.liga.songtask.util.ChangeMidi;
-import ru.liga.songtask.util.SongUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import static ru.liga.songtask.util.SongUtils.eventsToNotes;
 
-@Slf4j
 public class App {
-
+    private static Logger logger = LoggerFactory.getLogger(App.class);
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
             getArgs(args);
         } else {
-            log.info("Нет аргументов");
+            logger.info("No args");
         }
     }
 
     public static void analyze(String path) throws IOException {
-        log.debug("Анализ midi файла");
+        logger.debug("Analyze midi file");
         MidiFile midiFile = new MidiFile(new File(path));
         AnalyzeMidi analyze = new AnalyzeMidi(midiFile);
         analyze.fullAnalize();
@@ -51,14 +40,14 @@ public class App {
                     try {
                         trans = Integer.parseInt(args[3]);
                     } catch (Exception e) {
-                        log.debug("Неправильный агрумент: {}", e.getMessage());
+                        logger.debug("Wrong agr: {}", e.getMessage());
                     }
                 }
                 if (args[4].equals("-tempo")) {
                     try {
                         tempo = Float.parseFloat(args[5]);
                     } catch (Exception e) {
-                        log.debug("Неправильный агрумент: {}", e.getMessage());
+                        logger.debug("Wrong arg: {}", e.getMessage());
                     }
                 }
             }
@@ -67,24 +56,23 @@ public class App {
     }
 
     private static void change(String arg, Integer trans, Float tempo) {
-        log.info("Изменение файла {}, с транспонированием на {} полутонов и изменением темпа на {}%", arg, trans, tempo);
+        logger.info("Changing the file {}, with transposing in {} semitones and changing the tempo by {}%", arg, trans, tempo);
         File file = new File(arg);
         try {
             MidiFile midiFile = new MidiFile(file);
             MidiFile newMidi = ChangeMidi.changeMidi(midiFile, trans, tempo);
             String newPath = getPath(trans, tempo, file);
             newMidi.writeToFile(new File(newPath));
-            log.info("Изменённый файл: {}", newPath);
+            logger.info("Modified file: {}", newPath);
         } catch (IOException e) {
-            log.trace("Ошибка Midi файла");
+            logger.trace("Midi file error");
         }
     }
 
     private static String getPath(int trans, float tempo, File file) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(file.getName().replace(".mid","")).
-                append("-trans").append(trans).append("-tempo").append(tempo).append(".mid");
-        log.info("Файл изменён.");
-        return file.getParentFile().getAbsolutePath() + File.separator + builder.toString();
+        logger.info("File changed");
+        String builder = file.getName().replace(".mid", "") +
+                "-trans" + trans + "-tempo" + tempo + ".mid";
+        return file.getParentFile().getAbsolutePath() + File.separator + builder;
     }
 }
