@@ -1,4 +1,4 @@
-package ru.liga.songtask.util;
+package ru.liga.songtask.actions;
 
 import com.leff.midi.MidiFile;
 import com.leff.midi.event.meta.Tempo;
@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.liga.App;
 import ru.liga.songtask.domain.Note;
+import ru.liga.songtask.util.SongUtils;
 
 import java.util.*;
 

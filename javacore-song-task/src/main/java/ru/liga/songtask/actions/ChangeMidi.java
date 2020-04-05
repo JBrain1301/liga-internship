@@ -1,4 +1,4 @@
-package ru.liga.songtask.util;
+package ru.liga.songtask.actions;
 
 import com.leff.midi.MidiFile;
 import com.leff.midi.MidiTrack;
@@ -7,12 +7,12 @@ import com.leff.midi.event.NoteOff;
 import com.leff.midi.event.NoteOn;
 import com.leff.midi.event.meta.Tempo;
 import lombok.extern.slf4j.Slf4j;
+import ru.liga.songtask.util.SongUtils;
 
 import java.util.List;
 
 @Slf4j
 public class ChangeMidi {
-
 
     public ChangeMidi() {
     }
