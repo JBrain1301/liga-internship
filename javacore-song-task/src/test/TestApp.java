@@ -4,17 +4,21 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.liga.songtask.actions.AnalyzeMidi;
+import ru.liga.songtask.actions.ChangeMidi;
+import ru.liga.songtask.util.SongUtils;
 
 import java.io.File;
 import java.io.IOException;
 
 public class TestApp {
     AnalyzeMidi analyzeMidi;
+    static ChangeMidi changeMidi;
     static MidiFile file;
 
     @BeforeClass
     public static void initializeMidi() throws IOException {
         file = new MidiFile(new File("C:/Belle.mid"));
+        changeMidi = new ChangeMidi();
     }
 
     @Before
@@ -39,5 +43,10 @@ public class TestApp {
     public void Right_AnalysisDuration() {
         Assertions.assertThat(analyzeMidi.analyzisDuration().get(1250)).isEqualTo(8);
         Assertions.assertThat(analyzeMidi.analyzisDuration().get(357)).isEqualTo(162);
+    }
+
+    @Test
+    public void Right_ChangeTempo() {
+        Assertions.assertThat(SongUtils.getTempo(ChangeMidi.changeTempo(file,10)).getBpm()).isEqualTo(92.39997f);
     }
 }
