@@ -12,6 +12,10 @@ import java.io.IOException;
 public class ActionListener {
     private static Logger logger = LoggerFactory.getLogger(ActionListener.class);
 
+    public static void start(String[] args) throws IOException {
+        ArgsUtill.getArgs(args);
+    }
+
     public static void analyze(String path) throws IOException {
         logger.debug("Analyze midi file");
         MidiFile midiFile = new MidiFile(new File(path));
